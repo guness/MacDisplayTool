@@ -44,6 +44,26 @@ enum Audio {
     listOutputDevices().first { transportType($0) == kAudioDeviceTransportTypeBuiltIn }
   }
 
+  /// Best-effort match for the Apple Studio Display's audio output. Gated on
+  /// IOKit reporting the display USB device present, so we never claim audio
+  /// from hardware that isn't there. Among the candidate devices we pick the
+  /// first that isn't built-in or bluetooth — fine for setups with one
+  /// non-bluetooth external output, ambiguous otherwise.
+  static func studioDisplayOutputDevice() -> AudioDeviceID? {
+    guard USB.isStudioDisplayConnected() else { return nil }
+    return listOutputDevices().first { id in
+      guard let transport = transportType(id) else { return false }
+      switch transport {
+      case kAudioDeviceTransportTypeBuiltIn,
+           kAudioDeviceTransportTypeBluetooth,
+           kAudioDeviceTransportTypeBluetoothLE:
+        return false
+      default:
+        return true
+      }
+    }
+  }
+
   static func transportType(_ id: AudioDeviceID) -> UInt32? {
     var addr = AudioObjectPropertyAddress(
       mSelector: kAudioDevicePropertyTransportType,
@@ -54,21 +74,6 @@ enum Audio {
     var size = UInt32(MemoryLayout<UInt32>.size)
     guard AudioObjectGetPropertyData(id, &addr, 0, nil, &size, &value) == noErr else { return nil }
     return value
-  }
-
-  // MARK: - Polling
-
-  /// Polls until a new output device appears that isn't in `excluding`, or
-  /// until `timeout` elapses. Returns the first new device found.
-  static func waitForNewOutputDevice(excluding: Set<AudioDeviceID>, timeout: TimeInterval) -> AudioDeviceID? {
-    let deadline = Date().addingTimeInterval(timeout)
-    while Date() < deadline {
-      if let new = listOutputDevices().first(where: { !excluding.contains($0) }) {
-        return new
-      }
-      Thread.sleep(forTimeInterval: 0.05)
-    }
-    return nil
   }
 
   // MARK: - Internals

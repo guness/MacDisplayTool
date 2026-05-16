@@ -53,30 +53,25 @@ extension DisplayTool {
   }
 
   private static func enableWithAudio(id: CGDirectDisplayID, persistent: Bool) throws {
-    let preDevices = Swift.Set(Audio.listOutputDevices())
     let preDefault = Audio.defaultOutputDevice()
 
     try Video.setEnabled(id: id, enabled: true, persistent: persistent)
 
-    let defaultWasBuiltIn = preDefault.map { Audio.transportType($0) == kAudioDeviceTransportTypeBuiltIn } ?? false
-    guard defaultWasBuiltIn else { return }
+    let defaultIsBuiltIn = preDefault.map { Audio.transportType($0) == kAudioDeviceTransportTypeBuiltIn } ?? false
+    guard defaultIsBuiltIn else { return }
 
-    if let newDevice = Audio.waitForNewOutputDevice(excluding: preDevices, timeout: 2.0) {
-      try Audio.setDefaultOutputDevice(newDevice)
+    if let displayOutput = Audio.studioDisplayOutputDevice() {
+      try Audio.setDefaultOutputDevice(displayOutput)
     }
   }
 
   private static func disableWithAudio(id: CGDirectDisplayID, persistent: Bool) throws {
     let preDefault = Audio.defaultOutputDevice()
+    let displayOutput = Audio.studioDisplayOutputDevice()
 
     try Video.setEnabled(id: id, enabled: false, persistent: persistent)
 
-    Thread.sleep(forTimeInterval: 0.3)
-
-    guard let preDefault else { return }
-    let stillPresent = Audio.listOutputDevices().contains(preDefault)
-    guard !stillPresent else { return }
-
+    guard let preDefault, preDefault == displayOutput else { return }
     if let builtIn = Audio.builtInOutputDevice() {
       try Audio.setDefaultOutputDevice(builtIn)
     }

@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
   name: "DisplayTool",
+  platforms: [.macOS(.v13)],
   dependencies: [
     .package(
       url: "https://github.com/apple/swift-argument-parser.git",
