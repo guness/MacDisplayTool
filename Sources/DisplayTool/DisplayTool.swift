@@ -48,6 +48,8 @@ extension DisplayTool {
   struct Set: ParsableCommand {
     @Argument var displayID: CGDirectDisplayID
     @Flag var configuration: Configuration
+    @Flag(name: .long, help: "Persist across reboots. Default is for the current login session only.")
+    var persistent: Bool = false
 
     func run() throws {
       let enabled = configuration != .disabled
@@ -60,10 +62,10 @@ extension DisplayTool {
           throw ValidationError.wouldDisableLastDisplay(id: displayID)
         }
       }
-      try configureDisplay(id: displayID, enabled: enabled)
+      try configureDisplay(id: displayID, enabled: enabled, persistent: persistent)
     }
 
-    func configureDisplay(id: CGDirectDisplayID, enabled: Bool) throws {
+    func configureDisplay(id: CGDirectDisplayID, enabled: Bool, persistent: Bool) throws {
       var config: CGDisplayConfigRef?
 
       var result = CGBeginDisplayConfiguration(&config)
@@ -74,7 +76,8 @@ extension DisplayTool {
       guard result == .success else {
         throw APIError.coreGraphics(api: "CGSConfigureDisplayEnabled", error: result)
       }
-      result = CGCompleteDisplayConfiguration(config, .permanently)
+      let option: CGConfigureOption = persistent ? .permanently : .forSession
+      result = CGCompleteDisplayConfiguration(config, option)
       guard result == .success else {
         throw APIError.coreGraphics(api: "CGCompleteDisplayConfiguration", error: result)
       }
