@@ -50,7 +50,17 @@ extension DisplayTool {
     @Flag var configuration: Configuration
 
     func run() throws {
-      try configureDisplay(id: displayID, enabled: configuration != .disabled)
+      let enabled = configuration != .disabled
+      if !enabled {
+        let active = try List().listDisplayIDs()
+        guard active.contains(displayID) else {
+          throw ValidationError.displayNotActive(id: displayID)
+        }
+        guard active.count > 1 else {
+          throw ValidationError.wouldDisableLastDisplay(id: displayID)
+        }
+      }
+      try configureDisplay(id: displayID, enabled: enabled)
     }
 
     func configureDisplay(id: CGDirectDisplayID, enabled: Bool) throws {
@@ -81,5 +91,19 @@ extension DisplayTool {
 extension DisplayTool {
   enum APIError: Error {
     case coreGraphics(api: String, error: CGError)
+  }
+
+  enum ValidationError: Error, CustomStringConvertible {
+    case displayNotActive(id: CGDirectDisplayID)
+    case wouldDisableLastDisplay(id: CGDirectDisplayID)
+
+    var description: String {
+      switch self {
+      case .displayNotActive(let id):
+        return "Display \(id) is not in the active display list."
+      case .wouldDisableLastDisplay(let id):
+        return "Refusing to disable display \(id): it is the only active display."
+      }
+    }
   }
 }
