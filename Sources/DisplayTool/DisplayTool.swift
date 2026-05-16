@@ -38,10 +38,6 @@ extension DisplayTool {
     var persistent: Bool = false
 
     func run() throws {
-      let online = try Video.listOnlineDisplays()
-      guard online.contains(displayID) else {
-        throw Video.Error.displayNotOnline(id: displayID)
-      }
       let active = try Video.listActiveDisplays()
       let currentlyEnabled = active.contains(displayID)
       try applyState(id: displayID, enabled: !currentlyEnabled, persistent: persistent)
