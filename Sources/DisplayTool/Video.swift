@@ -7,6 +7,7 @@ enum Video {
   enum Error: Swift.Error, CustomStringConvertible {
     case coreGraphics(api: String, error: CGError)
     case displayNotActive(id: CGDirectDisplayID)
+    case displayNotOnline(id: CGDirectDisplayID)
     case wouldDisableLastDisplay(id: CGDirectDisplayID)
 
     var description: String {
@@ -15,6 +16,8 @@ enum Video {
         return "\(api) failed with CGError \(error.rawValue)."
       case .displayNotActive(let id):
         return "Display \(id) is not in the active display list."
+      case .displayNotOnline(let id):
+        return "Display \(id) is not in the online display list."
       case .wouldDisableLastDisplay(let id):
         return "Refusing to disable display \(id): it is the only active display."
       }
@@ -22,17 +25,28 @@ enum Video {
   }
 
   static func listActiveDisplays() throws -> [CGDirectDisplayID] {
+    try query(CGGetActiveDisplayList, name: "CGGetActiveDisplayList")
+  }
+
+  static func listOnlineDisplays() throws -> [CGDirectDisplayID] {
+    try query(CGGetOnlineDisplayList, name: "CGGetOnlineDisplayList")
+  }
+
+  private static func query(
+    _ api: (UInt32, UnsafeMutablePointer<CGDirectDisplayID>?, UnsafeMutablePointer<UInt32>?) -> CGError,
+    name: String
+  ) throws -> [CGDirectDisplayID] {
     var count: UInt32 = 0
-    var result = CGGetActiveDisplayList(.max, nil, &count)
+    var result = api(.max, nil, &count)
     guard result == .success else {
-      throw Error.coreGraphics(api: "CGGetActiveDisplayList", error: result)
+      throw Error.coreGraphics(api: name, error: result)
     }
 
     let buffer = UnsafeMutablePointer<CGDirectDisplayID>.allocate(capacity: Int(count))
     defer { buffer.deallocate() }
-    result = CGGetActiveDisplayList(count, buffer, &count)
+    result = api(count, buffer, &count)
     guard result == .success else {
-      throw Error.coreGraphics(api: "CGGetActiveDisplayList", error: result)
+      throw Error.coreGraphics(api: name, error: result)
     }
 
     return (0..<Int(count)).map { buffer[$0] }

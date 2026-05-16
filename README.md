@@ -36,6 +36,7 @@ DisplayTool list                              # list active display IDs
 DisplayTool set <id> --disabled               # soft-disconnect (session-only)
 DisplayTool set <id> --enabled                # reconnect
 DisplayTool set <id> --disabled --persistent  # persist across reboots
+DisplayTool toggle <id>                       # flip between enabled / disabled
 ```
 
 Refer to `DisplayTool help` for the full reference.
