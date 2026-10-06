@@ -2,8 +2,9 @@
 
 **Soft-disconnect your Apple Studio Display from the command line — for free.**
 
-A tiny Swift CLI that turns an external display on and off without unplugging
-it, and moves audio along with it. Built for the Studio Display, but the
+A small menu bar app and Swift CLI that turn an external display on and off
+without unplugging it, move audio along with it, and create custom-resolution
+virtual displays for remote access. Built for the Studio Display, but the
 display side works for any external display attached to an Apple Silicon Mac.
 
 ## What it does
@@ -11,7 +12,7 @@ display side works for any external display attached to an Apple Silicon Mac.
 - **Soft-disconnect a display.** Panel goes dark; macOS treats the display as
   unplugged. The USB-C cable stays connected, so the display keeps charging
   your MacBook.
-- **Reconnect it just as fast.** No menu bars, no system settings.
+- **Reconnect it just as fast.** Use the menu bar or a single CLI command.
 - **Audio follows the display.** When you turn the Studio Display off, audio
   falls back to your MacBook speakers. When you turn it back on, the display
   reclaims output — unless you're already on AirPods, in which case it leaves
@@ -32,7 +33,7 @@ display side works for any external display attached to an Apple Silicon Mac.
 
 - **vs BetterDisplay Pro:** the paid soft-disconnect feature, distilled into
   one focused tool, with the bonus that audio routing follows the display.
-  No background daemon, no menu bar app, no license.
+  Available from the CLI or the optional menu bar app, with no paid license.
 - **vs MonitorControl:** MonitorControl is about brightness/volume over
   DDC/CI. It doesn't soft-disconnect.
 - **vs macOS Connection Management:** the built-in toggle only handles the
@@ -44,6 +45,7 @@ display side works for any external display attached to an Apple Silicon Mac.
 - Apple Silicon Mac
 - macOS 13 or newer
 - Swift 6.2 toolchain (for building)
+- Full Xcode for building the SwiftUI menu bar app
 
 ## Build
 
@@ -52,6 +54,16 @@ swift build -c release
 ```
 
 The binary is produced at `./.build/release/DisplayTool`.
+
+To build the menu bar app (with the CLI included):
+
+```sh
+bash scripts/build-app.sh
+open dist/MacDisplayTool.app
+```
+
+Copy `dist/MacDisplayTool.app` to Applications for a permanent installation.
+The bundled CLI is at `MacDisplayTool.app/Contents/MacOS/DisplayTool`.
 
 ## Install
 
@@ -77,6 +89,50 @@ DisplayTool virtual 2732 2048                 # custom display for a remote clie
 
 `DisplayTool help` shows the full reference.
 
+### Menu bar app and saved resolution profiles
+
+Open the app and choose **Profiles…** to add a name, pixel
+width, height, and refresh rate. Select a saved profile from the menu to activate
+it, or choose **Default** to use the Mac's normal display resolution. Default
+shows those dimensions when available and is reserved as a built-in choice.
+The app owns the display, so terminal
+and SSH sessions can close after activation. Quitting the app removes its display.
+Select Default before editing or deleting an active profile.
+
+The same panel includes **Toggle display**, individual physical display
+disconnect controls, and a reconnect action for the last disabled display.
+These use the same audio-follow behavior and last-display protection as the
+original `toggle` command. Physical toggles apply to the current login session;
+the CLI's `--persistent` flag is still available for permanent physical toggles.
+Automatic toggles skip virtual displays created by this tool so they continue
+to target your physical monitor when a resolution profile is active.
+
+Enable **Launch at login** to start the app after logging in. The app remembers
+your selected resolution, including Default. macOS may require approval
+in Login Items settings. The app does not create a display before graphical login.
+
+The CLI can manage and activate the same saved profiles:
+
+```sh
+DisplayTool app
+DisplayTool profile add "Remote Tablet" 2732 2048
+DisplayTool profile list
+DisplayTool profile activate "Remote Tablet"
+DisplayTool profile activate Default
+DisplayTool profile status
+DisplayTool profile off
+DisplayTool profile remove "Remote Tablet"
+DisplayTool toggle                            # original functionality preserved
+```
+
+Activation starts the app if needed and waits for its response. Profiles are
+shared in `~/Library/Application Support/MacDisplayTool/profiles.json`. If the
+app is installed elsewhere, set `MACDISPLAYTOOL_APP` to its `.app` path.
+The app automatically imports the earlier persistent virtual display's settings
+and removes its old LaunchAgent when taking ownership. Existing foreground
+`virtual` commands and the older `--persistent` mode remain available, but use
+saved profiles for displays managed by the menu bar app.
+
 ### Custom resolution for remote connections
 
 ```sh
@@ -97,6 +153,22 @@ The client must capture the host's displays; clients that create an independent
 remote session may ignore this display. Use `Ctrl-C` or send `SIGTERM` to remove
 it. For an SSH session, keep it alive in a terminal multiplexer such as `tmux`.
 The display does not survive the process exiting or a reboot.
+
+To keep the display after closing SSH and recreate it at login:
+
+```sh
+DisplayTool virtual 2732 2048 --persistent
+DisplayTool virtual-stop                       # remove it and disable login startup
+```
+
+Persistent mode installs a user LaunchAgent in `~/Library/LaunchAgents`, starts
+the display in the background, and returns immediately. Run the command again
+to replace its resolution. Only one persistent display is managed per user.
+macOS restarts it if its process exits. A graphical user login is required;
+after a reboot, it starts when that user logs in, not at the pre-login screen.
+Run without `sudo` and keep the executable at its installed path. Logs are in
+`~/Library/Logs/MacDisplayTool/virtual.log`. `virtual-stop` does not stop displays
+started separately in foreground mode.
 
 This does not force unsupported timings onto your physical monitor. macOS's
 physical display mode API requires a mode supplied by the driver. A virtual

@@ -1,6 +1,7 @@
 import ArgumentParser
 import CoreGraphics
 import Darwin
+import DisplayCore
 import Foundation
 import VirtualDisplayBridge
 
@@ -14,6 +15,8 @@ extension DisplayTool {
     @Argument(help: "Pixel height (1–16384).") var height: Int
     @Option(name: .long, help: "Refresh rate in Hz (1–240).") var refreshRate: Double = 60
     @Option(name: .long, help: "Display name shown in macOS.") var name: String = "MacDisplayTool Remote"
+    @Flag(name: .long, help: "Run in the background and recreate this display at login, without keeping SSH open.")
+    var persistent: Bool = false
 
     func validate() throws {
       guard (1...16384).contains(width), (1...16384).contains(height) else {
@@ -28,6 +31,12 @@ extension DisplayTool {
     }
 
     func run() throws {
+      if persistent {
+        try VirtualAgent.install(width: width, height: height, refreshRate: refreshRate, name: name)
+        print("Persistent virtual display started: \(width)×\(height) at \(refreshRate) Hz.")
+        print("You can close SSH. The display restarts at login. Use DisplayTool virtual-stop to remove it.")
+        return
+      }
       // Dispatch signal sources keep cleanup on the main queue, outside the signal handler.
       // Install them before creation: a client can observe the display immediately.
       signal(SIGINT, SIG_IGN)
@@ -54,6 +63,17 @@ extension DisplayTool {
       withExtendedLifetime((display, sources)) {
         RunLoop.main.run()
       }
+    }
+  }
+
+  struct VirtualStop: ParsableCommand {
+    static let configuration = CommandConfiguration(
+      commandName: "virtual-stop", abstract: "Remove the persistent virtual display and disable its login startup."
+    )
+
+    func run() throws {
+      try VirtualAgent.remove()
+      print("Persistent virtual display stopped; login startup removed.")
     }
   }
 }

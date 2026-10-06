@@ -3,13 +3,17 @@ import CoreGraphics
 @_silgen_name("CGSConfigureDisplayEnabled")
 private func CGSConfigureDisplayEnabled(_ config: CGDisplayConfigRef, _ displayID: CGDirectDisplayID, _ enabled: Bool) -> CGError
 
-enum Video {
-  enum Error: Swift.Error, CustomStringConvertible {
+public enum Video {
+  public static func isManagedVirtualDisplay(_ id: CGDirectDisplayID) -> Bool {
+    CGDisplayVendorNumber(id) == 0x4D44 && CGDisplayModelNumber(id) == 1
+  }
+
+  public enum Error: Swift.Error, CustomStringConvertible {
     case coreGraphics(api: String, error: CGError)
     case displayNotActive(id: CGDirectDisplayID)
     case wouldDisableLastDisplay(id: CGDirectDisplayID)
 
-    var description: String {
+    public var description: String {
       switch self {
       case .coreGraphics(let api, let error):
         return "\(api) failed with CGError \(error.rawValue)."
@@ -21,7 +25,7 @@ enum Video {
     }
   }
 
-  static func listActiveDisplays() throws -> [CGDirectDisplayID] {
+  public static func listActiveDisplays() throws -> [CGDirectDisplayID] {
     var count: UInt32 = 0
     var result = CGGetActiveDisplayList(.max, nil, &count)
     guard result == .success else {
@@ -38,7 +42,7 @@ enum Video {
     return (0..<Int(count)).map { buffer[$0] }
   }
 
-  static func setEnabled(id: CGDirectDisplayID, enabled: Bool, persistent: Bool) throws {
+  public static func setEnabled(id: CGDirectDisplayID, enabled: Bool, persistent: Bool) throws {
     if !enabled {
       let active = try listActiveDisplays()
       guard active.contains(id) else { throw Error.displayNotActive(id: id) }
@@ -50,11 +54,14 @@ enum Video {
     guard result == .success, let config else {
       throw Error.coreGraphics(api: "CGBeginDisplayConfiguration", error: result)
     }
+    var completed = false
+    defer { if !completed { CGCancelDisplayConfiguration(config) } }
     result = CGSConfigureDisplayEnabled(config, id, enabled)
     guard result == .success else {
       throw Error.coreGraphics(api: "CGSConfigureDisplayEnabled", error: result)
     }
     let option: CGConfigureOption = persistent ? .permanently : .forSession
+    completed = true // Complete consumes the configuration even when it fails.
     result = CGCompleteDisplayConfiguration(config, option)
     guard result == .success else {
       throw Error.coreGraphics(api: "CGCompleteDisplayConfiguration", error: result)

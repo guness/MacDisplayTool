@@ -13,6 +13,8 @@ let package = Package(
     )
   ],
   targets: [
+    .target(name: "DisplayCore", dependencies: ["VirtualDisplayBridge"]),
+    .executableTarget(name: "DisplayMenu", dependencies: ["DisplayCore", "VirtualDisplayBridge"]),
     .target(
       name: "VirtualDisplayBridge",
       cSettings: [.unsafeFlags(["-fobjc-arc"])],
@@ -24,9 +26,10 @@ let package = Package(
       name: "DisplayTool",
       dependencies: [
         "VirtualDisplayBridge",
+        "DisplayCore",
         .product(name: "ArgumentParser", package: "swift-argument-parser")
       ]
     ),
-    .testTarget(name: "DisplayToolTests", dependencies: ["DisplayTool"])
+    .testTarget(name: "DisplayToolTests", dependencies: ["DisplayTool", "DisplayCore"])
   ]
 )
