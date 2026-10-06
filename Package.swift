@@ -13,13 +13,20 @@ let package = Package(
     )
   ],
   targets: [
+    .target(
+      name: "VirtualDisplayBridge",
+      cSettings: [.unsafeFlags(["-fobjc-arc"])],
+      linkerSettings: [.linkedFramework("CoreGraphics")]
+    ),
     // Targets are the basic building blocks of a package, defining a module or a test suite.
     // Targets can depend on other targets in this package and products from dependencies.
     .executableTarget(
       name: "DisplayTool",
       dependencies: [
+        "VirtualDisplayBridge",
         .product(name: "ArgumentParser", package: "swift-argument-parser")
       ]
-    )
+    ),
+    .testTarget(name: "DisplayToolTests", dependencies: ["DisplayTool"])
   ]
 )

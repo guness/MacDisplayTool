@@ -5,7 +5,7 @@ import Foundation
 
 @main
 struct DisplayTool: ParsableCommand {
-  static let configuration: CommandConfiguration = .init(subcommands: [List.self, Set.self, Toggle.self])
+  static let configuration: CommandConfiguration = .init(subcommands: [List.self, Set.self, Toggle.self, Virtual.self])
 }
 
 extension DisplayTool {
