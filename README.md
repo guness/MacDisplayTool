@@ -112,6 +112,12 @@ Enable **Launch at login** to start the app after logging in. The app remembers
 your selected resolution, including Default. macOS may require approval
 in Login Items settings. The app does not create a display before graphical login.
 
+Virtual displays follow the active login session. Switching users releases the
+previous session's display while retaining its selected profile; switching back
+restores that profile. Inactive sessions show a paused state. A separate Screen
+Sharing desktop may not be able to use these displays; connect to the active
+desktop instead. Profiles and login settings belong to each user separately.
+
 The CLI can manage and activate the same saved profiles:
 
 ```sh

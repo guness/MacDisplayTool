@@ -30,6 +30,6 @@ let package = Package(
         .product(name: "ArgumentParser", package: "swift-argument-parser")
       ]
     ),
-    .testTarget(name: "DisplayToolTests", dependencies: ["DisplayTool", "DisplayCore"])
+    .testTarget(name: "DisplayToolTests", dependencies: ["DisplayTool", "DisplayCore", "DisplayMenu"])
   ]
 )

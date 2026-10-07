@@ -84,8 +84,10 @@ public struct AppStatus: Codable, Sendable {
   public var profile: ResolutionProfile?
   public var displayID: UInt32?
   public var error: String?
-  public init(profile: ResolutionProfile?, displayID: UInt32?, error: String? = nil) {
+  public var sessionActive: Bool?
+  public init(profile: ResolutionProfile?, displayID: UInt32?, error: String? = nil, sessionActive: Bool? = nil) {
     processID = getpid(); self.profile = profile; self.displayID = displayID; self.error = error
+    self.sessionActive = sessionActive
   }
 }
 

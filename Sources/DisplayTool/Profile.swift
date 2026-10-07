@@ -53,7 +53,8 @@ extension DisplayTool {
     struct Status: ParsableCommand {
       func run() throws {
         let response = try MenuAppClient.request(.init(action: .status))
-        if let profile = response.status.profile { print("Active: \(profile.name), \(profile.detail), display \(response.status.displayID ?? 0).") }
+        if response.status.sessionActive == false { print("Resolution profiles are paused: this is not the Mac's active login session.") }
+        else if let profile = response.status.profile { print("Active: \(profile.name), \(profile.detail), display \(response.status.displayID ?? 0).") }
         else { print("Active: Default (system resolution).") }
         if let error = response.status.error { print("Last error: \(error)") }
       }

@@ -36,11 +36,14 @@ struct DisplayMenuContents: View {
 
   var body: some View {
     Group {
+      if !model.isSessionActive {
+        Text("Resolution paused: inactive login session")
+      }
       if model.isChanging {
         Text("Changing resolution…")
       }
       Picker("Resolution", selection: Binding<UUID?>(
-        get: { model.activeProfile?.id },
+        get: { model.document.activeProfileID },
         set: { id in
           if let id {
             model.performAsync { try await model.activate(id) }
@@ -52,6 +55,7 @@ struct DisplayMenuContents: View {
         Text("Default").tag(Optional<UUID>.none).help(model.defaultResolution)
         ForEach(model.document.profiles) { profile in
           Text(profile.name).tag(Optional(profile.id)).help(profile.detail)
+            .disabled(!model.isSessionActive)
         }
       }
       .pickerStyle(.inline)
@@ -61,7 +65,7 @@ struct DisplayMenuContents: View {
       Button { model.toggle() } label: {
         Label("Toggle display", systemImage: "power")
       }
-      .disabled(model.isChanging || (model.physicalDisplays.isEmpty && model.lastDisabledID == nil))
+      .disabled(model.isChanging || !model.isSessionActive || (model.physicalDisplays.isEmpty && model.lastDisabledID == nil))
       if !model.physicalDisplays.isEmpty || model.lastDisabledID != nil {
         Menu("Physical displays") {
           ForEach(model.physicalDisplays) { display in
@@ -71,7 +75,7 @@ struct DisplayMenuContents: View {
             Button("Reconnect Display \(id)") { model.toggle(id) }
           }
         }
-        .disabled(model.isChanging)
+        .disabled(model.isChanging || !model.isSessionActive)
       }
 
       Divider()
