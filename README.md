@@ -94,12 +94,13 @@ DisplayTool virtual 2732 2048                 # custom display for a remote clie
 Open the app and choose **Profiles…** to add a name, pixel
 width, height, and refresh rate. Select a saved profile from the menu to activate
 it, or choose **Default** to use the Mac's normal display resolution. Default
-shows those dimensions when available and is reserved as a built-in choice.
+is reserved as a built-in choice. The native macOS menu shows a checkmark next
+to the selected resolution and uses the system's appearance.
 The app owns the display, so terminal
 and SSH sessions can close after activation. Quitting the app removes its display.
 Select Default before editing or deleting an active profile.
 
-The same panel includes **Toggle display**, individual physical display
+The same menu includes **Toggle display**, individual physical display
 disconnect controls, and a reconnect action for the last disabled display.
 These use the same audio-follow behavior and last-display protection as the
 original `toggle` command. Physical toggles apply to the current login session;
